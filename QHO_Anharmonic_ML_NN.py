@@ -42,7 +42,7 @@ parser.add_argument("--linear_only", action="store_true",
 args = parser.parse_args()
 
 # ── physics ───────────────────────────────────────────────────────────
-N       = 16 
+N       = 16    
 T       = 1.0
 a_dt    = T / N
 m       = 1.0

@@ -57,7 +57,9 @@ lam,x_i,x_f,seed,best,K_ml_re,K_ml_im,abs_K_ml,std_err,final_loss,ess_n,K_basis_
 ,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Dont think end point symettry works here! ,,,,,,,,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,"Dont think end point symettry works here! 
+,,,,,,,,,,,"simply impliment a test set seperate to the training set, make the test set the same size as the taining set. 
+
+Then just apply all the stats/graphs/charts et to the test set instead of the current training set",,"Dont think end point symettry works here! 
 
 A) I should probably check with a train and test set just one one lambda. 
 
