@@ -1,0 +1,2 @@
+lam,x_i,x_f,seed,best,K_ml_re,K_ml_im,abs_K_ml,std_err,final_loss,ess_n,K_basis_re,K_basis_im,abs_K_basis,K_basis_unc,rel_diff_ml_basis,K_mehler_re,K_mehler_im,N,T,m,omega,eps,rank,epochs,time_s
+1,0,0,42,Y,4.3865860089803005e-01,-2.3992167734648401e-01,4.9998377913945125e-01,1.270144e-05,4.874426e-05,0.999902,-7.5384195005925525e-01,-5.7093562990802893e-01,9.4564537706669860e-01,1.050461e-01,1.308725e+00,4.1836667621661972e-01,-4.1836667621661966e-01,8,1.0,1.0,2,0.01,8,40000,1383.6
