@@ -20,7 +20,7 @@ from scipy.linalg import eigh
 # ---------------------------------------------------------------------------
 OMEGA   = 1.0        # HO frequency  — change to 2.0 etc. as needed
 T_REF   = 1.0        # reference propagation time
-N_BASIS = 400        # basis-truncation size
+N_BASIS = 400        # basis-truncation size 
 
 
 # ---------------------------------------------------------------------------
@@ -204,9 +204,9 @@ if __name__ == "__main__":
     # ==================================================================
     #  OMEGA = 2  propagator scan
     # ==================================================================
-    omega_scan  = 2.0
-    t_scan      = T_REF
-    lam_scan    = [0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5,
+    omega_scan  = 1 # 2.0
+    t_scan      = T_REF 
+    lam_scan    = [0.0, 0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5,       ## scan here
                    0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 2.0, 3.0, 4.0, 8.0]
     endpoints   = [
         (0.0, 0.0,  "xa=0,   xb=0"),
