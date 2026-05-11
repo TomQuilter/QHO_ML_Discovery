@@ -33,13 +33,13 @@ SEED_FILTER = None
 # Leave as None for full range.
 LAMBDA_MIN = None
 # Example: set to 1.0 to plot only the first few rows (lambda < 1).
-LAMBDA_MAX = 1
-
+LAMBDA_MAX = 8
+ 
 # Plot appearance.
 FIGSIZE = (10, 6)
 TITLE = r"Perturbation Real vs ML Real against $\lambda$"
 X_LABEL = r"$\lambda$"
-Y_LABEL = "Value"
+Y_LABEL = "Value" 
 Y1_LABEL = "Pet_Real"
 Y2_LABEL = "ML_Real"
 Y1_COLOR = "navy"  
@@ -132,7 +132,7 @@ def prepare_data(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def make_plot(plot_df: pd.DataFrame) -> None:
-    """
+    """ 
     Draw a clear comparison plot of Pet_Real and ML_Real versus lambda.
 
     To change colours, markers, labels, or line styles, edit the settings
