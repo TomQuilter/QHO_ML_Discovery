@@ -1,0 +1,2 @@
+seed,ladder_step,lam,warm_start,source_lam,K_re,K_im,abs_K,std_err,final_loss,ess_n,K_mehler_re,K_mehler_im,epochs_used,N,T,m,omega,eps,rank,x_i,x_f,init_type,time_s,weight_file,best_loss_for_seed
+42,0,0.1,Y,0.05,3.5147867897567953e-01,2.4813783362591052e-01,4.3024370564954095e-01,3.054366e-05,4.439218e-04,0.999573,3.4015328265767059e-01,3.4015328265767053e-01,60000,16,3.9,1.0,1,0.01,32,0,0,default,14640.1,runs\20260615_122711_omega1_T3.9_N16_m1.0_eps0.01_xi0_xf0\warm_start_weights_Epsilon_Scan\seed42_step00_lam0.1000_eps0.01_xi0_xf0.pt,Y
