@@ -1,0 +1,4 @@
+x_i,x_f,lam,check_name,value_ML,value_ref,rel_error,passed
+0,0,0.1,Chapman-Kolmogorov,7.6910485373e-02,7.6910485373e-02,6.315427e-15,Y
+0,0,0.1,Spectral_E0,5.1736484863e-01,5.1736484863e-01,3.004287e-15,Y
+0,0,0.1,x2_thermal,4.8281546154e-01,4.8281546154e-01,2.299477e-16,Y

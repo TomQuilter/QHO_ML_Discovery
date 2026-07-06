@@ -1,0 +1,2 @@
+seed,ladder_step,lam,warm_start,source_lam,K_re,K_im,abs_K,std_err,final_loss,ess_n,K_mehler_re,K_mehler_im,epochs_used,N,T,m,omega,eps,rank,x_i,x_f,time_s,weight_file
+42,0,0,N,,-1.07E+00,1.24E+00,1.64E+00,2.06E-04,1.73E-03,0.998449,8.45E-01,-8.45E-01,15000,16,4.6,1,2,0.01,64,0,0,3982.5,warm_start_weights\seed42_step00_lam0.0000.pt
