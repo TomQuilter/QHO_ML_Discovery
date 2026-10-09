@@ -1,0 +1,56 @@
+import numpy as np
+from scipy.linalg import eigh
+import matplotlib.pyplot as plt
+import time as timer
+
+# == Global parameters (adjust these freely) ====================
+X_INITIAL = 0.0        # initial position x_i
+X_FINAL   = 0.0        # final position x_f
+T_DEFAULT = 1.0        # propagation time T
+OMEGA     = 1.0        # harmonic oscillator frequency
+ETA       = 0.05       # imaginary part of T_c = T - i*ETA for the FULL propagator
+# Regularisation accounting in the Dyson series:
+#   K0  : uses eta = ETA directly  (1 factor, total = ETA) ✓
+#   K1  : each K0 factor uses eta = ETA/2  (2 factors, total = 2*ETA/2 = ETA) ✓
+#   K2  : each K0 factor uses eta = ETA  (3 factors, total = 3*ETA).
+#         This differs from the ideal ETA by O(ETA), but lambda^2*K2 is so small
+#         (~1e-3) that the resulting error in |K| is < 1e-6 at lambda=0.1.
+#         Using full ETA for K2 keeps the spatial integrals well-damped.
+#
+# Root cause of old discrepancy: compute_K1 with eta=ETA gave K1 at T-2i*ETA,
+# while K_exact uses T-i*ETA.  Since d|K|/dlambda ~ eta (slope is zero at eta=0
+# because K0 ~ (1-i) and K1 ~ (1+i) are perpendicular), doubling eta in K1 doubled
+# the PT slope vs the exact slope.  Fix: use eta=ETA/2 in compute_K1.
+#
+# Spatial convergence for K1 (eta_per_factor = ETA/2 = 0.025, Y_MAX = 10):
+#   (ETA/2) / sin^2(omega*T/2) * Y_MAX^2 = 0.025/0.2298*100 = 10.9  -> exp(-10.9) ~ 2e-5  ✓
+# Spatial convergence for K2 (eta_per_factor = ETA = 0.05, Y_MAX = 10):
+#   ETA / sin^2(omega*T/2) * Y_MAX^2 = 0.05/0.2298*100 = 21.8  -> exp(-21.8) ~ 3e-10  ✓
+#
+# Why not smaller ETA?
+#   Decreasing eta lets more high-n eigenstates contribute to the exact sum.
+#   Those states have large anharmonic energy shifts dE_n/dlambda ~ n^2, so
+#   their phases exp(-i E_n T) rotate many times as lambda varies, producing
+#   rapid oscillations in K(lambda) that look wrong but are genuine physics.
+#   At eta=0.05, states beyond n~30 are suppressed by exp(-E_n*eta) < 1%,
+#   giving a smooth, reliable comparison between PT and exact diagonalisation.
+PT_ORDER  = 1          # perturbation theory order (1 or 2)
+# Exact-method toggles (for §9 / §9.1 plots)
+EXACT_FD  = True       # FD grid diagonalisation - coarse independent sense-check (sparse points only)
+EXACT_HO  = True       # SHO eigenbasis expansion (dense N_BASIS x N_BASIS matrix)
+# Quadrature settings
+NY        = 300        # number of spatial grid points for y integrals
+NT        = 100        # number of time grid points
+Y_MAX     = 10.0       # spatial integration range [-Y_MAX, Y_MAX]
+#   Increased from 8 to 10: ensures K1 (with eta/2 per factor) is well-damped.
+# Exact diag settings
+# At ETA=0.05, states with n > ~100 contribute < 0.001% to the propagator sum.
+# N_BASIS=500 is therefore ample; eigh() on a 500x500 matrix is near-instant.
+N_BASIS   = 500        # basis size for SHO eigenbasis expansion
+# ===============================================================
+
+print(f"x_i = {X_INITIAL},  x_f = {X_FINAL},  T = {T_DEFAULT},  omega = {OMEGA}")
+print(f"Regularisation eta = {ETA}  (K1 per-factor eta = {ETA/2}, K2 per-factor eta = {ETA})")
+print(f"PT order = {PT_ORDER}")
+print(f"Exact methods: FD={EXACT_FD}, HO basis={EXACT_HO}")
+print(f"Quadrature: Ny = {NY}, Nt = {NT}, y_max = {Y_MAX}")

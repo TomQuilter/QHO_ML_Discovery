@@ -1,0 +1,2 @@
+lambda,N,K_trivial_re,K_trivial_im,K_bounce_re,K_bounce_im,K_physical_re,K_physical_im,K_reference_re,K_reference_im,single_relative_error,corrected_relative_error,combined_stderr,trivial_ESS_over_N,bounce_ESS_over_N
+0.1,16,-0.3100051243632433,-0.4151502424406399,0.0,0.0,-0.2236022890572953,-0.3245517578895023,-0.22325914225911805,-0.32473438771979846,0.31795576819537175,0.0009864054487052798,0.000585883547148355,0.9121056794474277,nan

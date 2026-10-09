@@ -1,0 +1,31 @@
+{
+  "method": "phase_descent",
+  "N": 16,
+  "T": 1.0,
+  "eta": 0.05,
+  "mass": 1.0,
+  "omega": 1.0,
+  "lambdas": [
+    0.0,
+    0.7,
+    2.4
+  ],
+  "seeds": [
+    52,
+    53,
+    54
+  ],
+  "rank": 32,
+  "epochs": 15000,
+  "epochs_lambda0": 100,
+  "batch": 768,
+  "learning_rate": 0.002,
+  "N_mc": 400000,
+  "MC_chunk": 2000,
+  "tail_radius": 7.745966692414834,
+  "tail_power": 8,
+  "tail_angle_radians": -0.38020948276823846,
+  "reference_basis": 300,
+  "device": "cpu",
+  "quick_test": false
+}

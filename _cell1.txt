@@ -1,0 +1,75 @@
+import copy
+import json
+import os
+import time
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.nn as nn
+
+# PDF recommendation: avoid complex64 accumulation.
+torch.set_default_dtype(torch.float64)
+torch.manual_seed(42)
+np.random.seed(42)
+
+# Physics/discretisation
+N = 32
+T = 1.0
+eta = 0.05
+m = 1.0
+omega = 1.0
+D = N - 1
+T_c = T - 1j * eta
+a_c = T_c / N
+
+# Model/training
+rank = 16
+batch = 2048
+N_mc = 100_000
+epochs = 30_000
+seed_list = [42]
+lambda_list = [0.0, 0.7, 2.4]  # λ=0 validation is deliberately mandatory
+x_i_prop = 0.0
+x_f_prop = 0.0
+
+# Contour init / training
+# "identity" is useless for complex time (catastrophic sign problem).
+# Use the complex Hessian thimble. For odd D, A -> -A flips det(A) and the
+# global sign of K; FLIP_A_SIGN chooses the branch that matches lattice refs.
+INIT_MODE = "complex_hessian"  # "identity" or "complex_hessian"
+FLIP_A_SIGN = True             # needed so λ=0 matches +lattice, not -lattice
+TRAIN_A = True                 # True lets A adapt for lambda>0
+DETACH_JACOBIAN_CORRECTION = True
+# Keep λ=0 focused and fast while debugging.
+lambda_list = [0.0]
+epochs = 5000
+N_mc = 50_000
+seed_list = [42]
+
+# Exact references supplied in note_for_tom.pdf.
+# Compare fixed-N ML to LATTICE first; continuum is a separate discretisation limit.
+LATTICE_REFERENCE_N32 = {
+    0.0: 0.3121159 - 0.3022604j,
+    0.5: 0.3057603 - 0.3077905j,
+    0.7: 0.2684413 - 0.2878695j,
+    2.4: -0.1109040 - 0.1529262j,
+}
+CONTINUUM_REFERENCE = {
+    0.0: 0.3121370 - 0.3022849j,
+    0.5: 0.3063511 - 0.3082963j,
+    0.7: 0.2684401 - 0.2897428j,
+    2.4: -0.1118026 - 0.1577383j,
+}
+
+run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+run_dir = os.path.join(
+    "runs", f"{run_timestamp}_PDF_fixed_T{T}_eta{eta}_N{N}_rank{rank}"
+)
+os.makedirs(run_dir, exist_ok=True)
+
+print(f"T_c={T_c}, a_c={a_c}, N={N}, D={D}")
+print(f"lambdas={lambda_list}, seeds={seed_list}")
+print(f"INIT_MODE={INIT_MODE}, TRAIN_A={TRAIN_A}")
+print(f"run_dir={run_dir}")

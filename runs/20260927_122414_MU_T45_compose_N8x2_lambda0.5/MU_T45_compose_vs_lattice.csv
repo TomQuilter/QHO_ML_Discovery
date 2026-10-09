@@ -1,0 +1,2 @@
+T_full,N_half,eta_half,K_compose_re,K_compose_im,K_lattice_re,K_lattice_im,complex_rel_err_vs_lattice,min_ESS_over_N,status,run_directory
+4.5,8,0.025,-0.14392293300760073,-0.005539926474259216,-0.956047752103872,-0.5567694617845312,0.8871750277378316,0.002069845755612905,FAIL,runs\20260927_122414_MU_T45_compose_N8x2_lambda0.5\compose

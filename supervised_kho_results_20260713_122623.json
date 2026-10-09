@@ -1,0 +1,36 @@
+[
+  {
+    "lam": 0.7,
+    "K_final": [
+      NaN,
+      NaN
+    ],
+    "K_target": [
+      0.268440134,
+      -0.289742841
+    ],
+    "err_re": NaN,
+    "err_im": NaN,
+    "loss_var": NaN,
+    "ess": NaN,
+    "time": 1762.9048488140106,
+    "status": "FAIL"
+  },
+  {
+    "lam": 2.5,
+    "K_final": [
+      NaN,
+      NaN
+    ],
+    "K_target": [
+      -0.111802649,
+      -0.157738326
+    ],
+    "err_re": NaN,
+    "err_im": NaN,
+    "loss_var": NaN,
+    "ess": NaN,
+    "time": 1482.0130665302277,
+    "status": "FAIL"
+  }
+]

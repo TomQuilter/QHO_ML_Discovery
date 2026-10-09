@@ -1,0 +1,73 @@
+def complex_action(x, x_i, x_f, lam_val, a_c_val, m_val, omega_val):
+    """Discretised action, accumulated in complex128."""
+    x = x.to(torch.complex128)
+    bsz = x.shape[0]
+    pad_i = torch.full((bsz, 1), complex(x_i), dtype=torch.complex128, device=x.device)
+    pad_f = torch.full((bsz, 1), complex(x_f), dtype=torch.complex128, device=x.device)
+    x_pad = torch.cat([pad_i, x, pad_f], dim=1)
+
+    dx = x_pad[:, 1:] - x_pad[:, :-1]
+    x_left = x_pad[:, :-1]  # x_0,...,x_{N-1}; includes V(x_i), excludes V(x_f)
+
+    kinetic = (m_val / (2 * a_c_val)) * torch.sum(dx**2, dim=1)
+    potential = a_c_val * torch.sum(
+        0.5 * m_val * omega_val**2 * x_left**2 + 0.25 * lam_val * x_left**4,
+        dim=1,
+    )
+    return kinetic - potential
+
+
+def compute_complex_hessian_A_init(N_val, a_c_val, m_val, omega_val):
+    """Harmonic Gaussian map using the complex time step.
+
+    For x=A z, this constructs A with A.T @ H @ A = i I. The tridiagonal
+    complex Hessian is diagonalised analytically by the real sine basis.
+    """
+    D_val = N_val - 1
+    j = np.arange(1, N_val)[:, None]
+    k = np.arange(1, N_val)[None, :]
+    Q = np.sqrt(2.0 / N_val) * np.sin(np.pi * j * k / N_val)
+
+    diag_val = 2.0 * m_val / a_c_val - a_c_val * m_val * omega_val**2
+    off_val = -m_val / a_c_val
+    modes = np.arange(1, N_val)
+    eigvals = diag_val + 2.0 * off_val * np.cos(np.pi * modes / N_val)
+    scales = np.sqrt(1j / eigvals)
+    A_np = Q @ np.diag(scales)
+    return torch.tensor(A_np, dtype=torch.complex128)
+
+
+def initial_A(init_mode, N_val, a_c_val, m_val, omega_val):
+    D_val = N_val - 1
+    if init_mode == "identity":
+        return torch.eye(D_val, dtype=torch.complex128)
+    if init_mode == "complex_hessian":
+        A = compute_complex_hessian_A_init(N_val, a_c_val, m_val, omega_val)
+        # Branch-cut fix: check that det(A) puts us in the correct homology class.
+        # For lambda=0, K = prefactor * det(A) * (2pi)^{D/2} exactly.
+        # If this has the wrong sign vs the known reference, flip A (valid for odd D).
+        K_ref_0 = LATTICE_REFERENCE_N32[0.0]
+        prefactor = (m_val / (2 * np.pi * 1j * a_c_val)) ** (N_val / 2)
+        det_A = np.linalg.det(A.numpy())
+        K_gaussian = prefactor * det_A * (2 * np.pi) ** (D_val / 2)
+        # Check if the gaussian estimate has the same sign (phase) as the reference.
+        # Dot product in the complex plane: positive means same half-plane.
+        dot = (K_gaussian * np.conj(K_ref_0)).real
+        if dot < 0:
+            A = -A  # flip branch; det(-A)=(-1)^D det(A), D=31 odd => flips sign
+            print("Branch-cut correction applied: negated A to match correct homology class.")
+        else:
+            print("Branch-cut check passed: A is in the correct homology class.")
+        return A
+    raise ValueError(f"Unknown INIT_MODE={init_mode!r}")
+
+
+# Tight algebraic check for the optional Hessian map.
+_A_test = compute_complex_hessian_A_init(N, a_c, m, omega)
+_H_test = torch.zeros((D, D), dtype=torch.complex128)
+_H_test.fill_diagonal_(2 * m / a_c - a_c * m * omega**2)
+idx = torch.arange(D - 1)
+_H_test[idx, idx + 1] = -m / a_c
+_H_test[idx + 1, idx] = -m / a_c
+_hessian_residual = torch.max(torch.abs(_A_test.T @ _H_test @ _A_test - 1j * torch.eye(D)))
+print(f"complex-Hessian init residual: {_hessian_residual.item():.3e}")

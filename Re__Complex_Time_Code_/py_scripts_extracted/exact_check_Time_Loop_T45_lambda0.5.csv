@@ -1,0 +1,2 @@
+lambda,N,T,eta,T_c_re,T_c_im,lattice_K_re,lattice_K_im,lattice_abs_K,continuum_K_re,continuum_K_im,continuum_abs_K,lattice_vs_continuum_rel_diff
+0.5,16,4.5,0.05,4.5,-0.05,-0.956047752103872,-0.5567694617845312,1.106354164758602,-0.6834571090626325,-0.7736310577882086,1.0322880574252293,0.3374360255614412

@@ -1,0 +1,13 @@
+{
+  "T_full": 4.5,
+  "N_half": 8,
+  "eta_half": 0.025,
+  "K_compose_re": -0.14392293300760073,
+  "K_compose_im": -0.005539926474259216,
+  "K_lattice_re": -0.956047752103872,
+  "K_lattice_im": -0.5567694617845312,
+  "complex_rel_err_vs_lattice": 0.8871750277378316,
+  "min_ESS_over_N": 0.002069845755612905,
+  "status": "FAIL",
+  "run_directory": "runs\\20260927_122414_MU_T45_compose_N8x2_lambda0.5\\compose"
+}

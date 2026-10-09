@@ -1,0 +1,214 @@
+from scipy.linalg import eigh_tridiagonal
+
+# Grid parameters for the exact FD diagonalisation
+FD_N    = 4001    # grid points (odd => x=0 is an exact grid point)
+                  # 4001 (dx=0.005) cuts the O(dx^2 E^2) tail error ~16x vs 1001:
+                  # |K| error ~1e-2 at lam~1 with 1001 -> ~1e-3 with 4001.
+                  # Role: FD is a coarse independent SENSE-CHECK evaluated at
+                  # sparse points; the HO basis is the reference everywhere.
+FD_XMAX = 10.0    # half-width of grid [-x_max, x_max]
+FD_NKEEP = 200    # lowest eigenpairs to retain
+                  # At eta=0.05, E_n > 100 contributes < 0.7%; n=200 gives E_200>>100 -> safe
+
+
+def propagator_exact(xf, xi, T, lam, omega=OMEGA, eta=ETA,
+                     n_grid=FD_N, x_max=FD_XMAX, n_keep=FD_NKEEP):
+    """
+    Exact propagator K(xf, xi; T-i*eta) via finite-difference diagonalisation.
+
+    Builds H = -(1/2)d^2/dx^2 + omega^2 x^2/2 + (lam/4)x^4 as a symmetric
+    tridiagonal matrix on a uniform real-space grid, then diagonalises via
+    LAPACK dstevr (O(N * n_keep) time).
+
+    K(xf, xi; T_c) = (1/dx) * sum_n U[j_xf,n] * U[j_xi,n] * exp(-i E_n T_c)
+    where psi_n(x_k) = U[k,n] / sqrt(dx)  (continuous normalisation).
+    """
+    dx = 2.0 * x_max / (n_grid - 1)
+    x_vals = np.linspace(-x_max, x_max, n_grid)
+
+    KE_diag = np.full(n_grid,   1.0 / dx**2)
+    KE_off  = np.full(n_grid-1, -0.5 / dx**2)
+    V_diag  = 0.5 * omega**2 * x_vals**2 + (lam / 4.0) * x_vals**4
+
+    eigenvalues, U = eigh_tridiagonal(
+        KE_diag + V_diag, KE_off,
+        select='i', select_range=(0, n_keep - 1)
+    )
+
+    j_xf = np.argmin(np.abs(x_vals - xf))
+    j_xi = np.argmin(np.abs(x_vals - xi))
+
+    T_c = T - 1j * eta
+    return np.sum(U[j_xf, :] * U[j_xi, :] * np.exp(-1j * eigenvalues * T_c)) / dx
+
+
+# ---- Keep HO-basis helpers for the energy-level comparison in §11 ----
+
+def ho_wfn_array(x, omega=OMEGA, N=N_BASIS):
+    xi = np.sqrt(omega) * x
+    phi = np.zeros(N)
+    phi[0] = (omega / np.pi)**0.25 * np.exp(-omega * x**2 / 2.0)
+    if N > 1:
+        phi[1] = np.sqrt(2.0) * xi * phi[0]
+    for n in range(1, N - 1):
+        phi[n+1] = np.sqrt(2.0/(n+1)) * xi * phi[n] - np.sqrt(n/(n+1)) * phi[n-1]
+    return phi
+
+
+def x4_matrix_elements(N, omega=OMEGA):
+    mat = np.zeros((N, N))
+    inv4w2 = 1.0 / (4.0 * omega**2)
+    for n in range(N):
+        mat[n, n] = (6*n*n + 6*n + 3) * inv4w2
+        if n + 2 < N:
+            val = 2*(2*n + 3) * np.sqrt((n+1)*(n+2)) * inv4w2
+            mat[n, n+2] = val
+            mat[n+2, n] = val
+        if n + 4 < N:
+            val = np.sqrt((n+1)*(n+2)*(n+3)*(n+4)) * inv4w2
+            mat[n, n+4] = val
+            mat[n+4, n] = val
+    return mat
+
+
+def propagator_exact_ho(xf, xi, T, lam, omega=OMEGA, eta=ETA, N=N_BASIS):
+    """
+    Exact propagator via SHO eigenbasis expansion.
+
+    Diagonalises H = H_SHO + (lam/4)x^4 in the basis of N harmonic-oscillator
+    eigenstates phi_n.  Matrix elements of x^4 are analytic (x4_matrix_elements).
+    Eigenstates of the full H are psi_n = sum_m U[m,n] phi_m.
+
+    K(xf, xi; T_c) = sum_n psi_n(xf) psi_n(xi) exp(-i E_n T_c)
+    """
+    E0 = omega * (np.arange(N) + 0.5)
+    H_mat = np.diag(E0) + (lam / 4.0) * x4_matrix_elements(N, omega)
+    eigenvalues, U = eigh(H_mat)
+    phi_xf = ho_wfn_array(xf, omega=omega, N=N)
+    phi_xi = ho_wfn_array(xi, omega=omega, N=N)
+    psi_xf = U.T @ phi_xf
+    psi_xi = U.T @ phi_xi
+    T_c = T - 1j * eta
+    return np.sum(psi_xf * psi_xi * np.exp(-1j * eigenvalues * T_c))
+
+
+
+
+def propagator_exact_Tscan(T_array, lam, omega=OMEGA, eta=ETA,
+                            n_grid=FD_N, x_max=FD_XMAX, n_keep=FD_NKEEP):
+    """Exact K(0,0; T-i*eta) for an array of T values, efficiently.
+
+    Builds H and diagonalises ONCE per lambda, then evaluates the spectral
+    sum at all T values via a single matrix multiply.  Orders of magnitude
+    faster than calling propagator_exact in a loop.
+
+    Parameters
+    ----------
+    T_array : array-like  -- 1-D array of real propagation times
+    lam : float           -- coupling constant lambda
+
+    Returns
+    -------
+    K_array : ndarray (complex) -- K(0,0; T-i*eta) for each T
+    """
+    T_arr = np.asarray(T_array, dtype=float)
+    dx = 2.0 * x_max / (n_grid - 1)
+    x_vals = np.linspace(-x_max, x_max, n_grid)
+
+    KE_diag = np.full(n_grid, 1.0 / dx**2)
+    KE_off  = np.full(n_grid - 1, -0.5 / dx**2)
+    V_diag  = 0.5 * omega**2 * x_vals**2 + (lam / 4.0) * x_vals**4
+
+    E, U = eigh_tridiagonal(
+        KE_diag + V_diag, KE_off,
+        select='i', select_range=(0, n_keep - 1))
+
+    j0 = n_grid // 2                     # x = 0 index (symmetric grid, odd N)
+    amp = U[j0, :]**2 / dx               # spectral weights |psi_n(0)|^2
+
+    T_c = T_arr - 1j * eta               # complex time array
+    # (n_T, n_keep) @ (n_keep,) -> (n_T,)
+    return np.exp(-1j * E[np.newaxis, :] * T_c[:, np.newaxis]) @ amp
+
+
+
+
+# ---- HO-basis propagator with adaptive basis size ----
+# The HO basis gives eigenvalues accurate to machine precision for all
+# n < N, unlike the FD grid where discretisation error grows rapidly
+# with n (e.g. ~40% error at n=100).  Use these for small η or when
+# high-n eigenstate accuracy matters.
+
+def propagator_ho(xf, xi, T, lam, omega=OMEGA, eta=ETA, N=None):
+    """K(xf, xi; T-iη) via HO basis — analytic matrix elements, adaptive N.
+
+    For small η, automatically increases N so that exp(-η·E_N) < ~1e-10.
+    """
+    if N is None:
+        N = max(N_BASIS, int(np.ceil(23.0 / (eta * omega))) + 50)
+        N = min(N, 3000)
+
+    E0_diag = omega * (np.arange(N) + 0.5)
+    H_mat = np.diag(E0_diag) + (lam / 4.0) * x4_matrix_elements(N, omega)
+    eigenvalues, U = eigh(H_mat)
+
+    phi_xf = ho_wfn_array(xf, omega=omega, N=N)
+    phi_xi = ho_wfn_array(xi, omega=omega, N=N)
+    psi_xf = U.T @ phi_xf
+    psi_xi = U.T @ phi_xi
+
+    T_c = T - 1j * eta
+    return np.sum(psi_xf * psi_xi * np.exp(-1j * eigenvalues * T_c))
+
+
+def propagator_ho_Tscan(T_array, lam, omega=OMEGA, eta=ETA, N=None):
+    """K(0,0; T-iη) for an array of T values via HO basis.
+
+    Advantages over the FD grid (propagator_exact_Tscan):
+    - Eigenvalues accurate to machine precision for all n < N
+    - No spatial discretisation error
+    - Only even-parity states contribute at x_f = x_i = 0
+
+    N is chosen adaptively based on η if not specified:
+    N = max(N_BASIS, ceil(23/(η·ω)) + 50)  so that exp(-η·E_N) < ~1e-10.
+    """
+    if N is None:
+        N = max(N_BASIS, int(np.ceil(23.0 / (eta * omega))) + 50)
+        N = min(N, 3000)
+
+    T_arr = np.asarray(T_array, dtype=float)
+
+    E0_diag = omega * (np.arange(N) + 0.5)
+    H_mat = np.diag(E0_diag) + (lam / 4.0) * x4_matrix_elements(N, omega)
+    eigenvalues, U = eigh(H_mat)
+
+    phi_0 = ho_wfn_array(0.0, omega=omega, N=N)
+    psi_0 = U.T @ phi_0
+    weights = psi_0**2
+
+    T_c = T_arr - 1j * eta
+    return np.exp(-1j * eigenvalues[np.newaxis, :] * T_c[:, np.newaxis]) @ weights
+
+
+# ---- Validation ----
+# 1. At lambda=0, must reproduce the Mehler kernel (analytic, exact).
+K_fd     = propagator_exact(X_FINAL, X_INITIAL, T_DEFAULT, lam=0.0)
+K_mehler = K0_exact(X_FINAL, X_INITIAL, T_DEFAULT)
+print(f"FD exact  (lam=0) = {K_fd:.10f}")
+print(f"Mehler kernel     = {K_mehler:.10f}")
+print(f"|diff|            = {abs(K_fd - K_mehler):.2e}  (FD grid error at lam=0)")
+print()
+
+# 2. Demo that eta=0 is unworkable: partial sum diverges.
+print("Convergence at eta=0 (should NOT converge -- distributional kernel):")
+dx0 = 2*FD_XMAX/(FD_N-1)
+x0  = np.linspace(-FD_XMAX, FD_XMAX, FD_N)
+j0  = FD_N // 2
+KE_d0 = np.full(FD_N, 1.0/dx0**2)
+KE_o0 = np.full(FD_N-1, -0.5/dx0**2)
+V0 = 0.5*OMEGA**2*x0**2
+ev0, U0 = eigh_tridiagonal(KE_d0+V0, KE_o0)
+K_exact_eta0 = np.sqrt(OMEGA/(2*np.pi*1j*np.sin(OMEGA*T_DEFAULT)))  # true value
+for nk in [50, 100, 200, 500, FD_N]:
+    K_sum = np.sum(U0[j0,:nk]**2 * np.exp(-1j*ev0[:nk]*T_DEFAULT)) / dx0
+    print(f"  n_keep={nk:4d}: K = {K_sum:.5f}   |K|={abs(K_sum):.4f}   (true={abs(K_exact_eta0):.4f})")

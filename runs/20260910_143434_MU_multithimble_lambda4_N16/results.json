@@ -1,0 +1,58 @@
+{
+  "lambda": 4,
+  "N": 16,
+  "decomposition": "K_physical = K_trivial + 2*K_bounce",
+  "K_trivial": [
+    0.3406518045005249,
+    -0.26381924232988424
+  ],
+  "K_bounce": [
+    0.24267123292854065,
+    0.22518922165986927
+  ],
+  "K_combined": [
+    0.8259942703576062,
+    0.1865592009898543
+  ],
+  "K_reference": [
+    0.8243744616282979,
+    0.18421538637675472
+  ],
+  "single_thimble_relative_error": 0.7805494948653042,
+  "combined_relative_error": 0.003372863041794607,
+  "combined_stderr": 0.0015416842508451552,
+  "settings": {
+    "rank": 16,
+    "epochs_per_saddle": 1000,
+    "batch": 512,
+    "N_mc_per_saddle": 80000,
+    "learning_rate": 0.001,
+    "seed": 52,
+    "device": "cpu",
+    "quick_test": false
+  },
+  "individual": {
+    "trivial": {
+      "K": [
+        0.3406518045005249,
+        -0.26381924232988424
+      ],
+      "stderr": 0.00014851585062281554,
+      "ESS_over_N": 0.9905844516376019,
+      "block_scatter": 0.00014732404432549087,
+      "final_loss": 0.012086354825213795,
+      "seconds": 22.13997459411621
+    },
+    "bounce": {
+      "K": [
+        0.24267123292854065,
+        0.22518922165986927
+      ],
+      "stderr": 0.0007672570252884246,
+      "ESS_over_N": 0.6994485222945198,
+      "block_scatter": 0.001823664493927693,
+      "final_loss": 0.1023698016438883,
+      "seconds": 21.66634774208069
+    }
+  }
+}
